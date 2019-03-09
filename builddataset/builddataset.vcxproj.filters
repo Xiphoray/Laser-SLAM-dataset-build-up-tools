@@ -11,8 +11,22 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="$safeprojectname$.cpp">
+    <ClCompile Include="builddataset.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ThisRobot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CImg.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThisRobot.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="basic.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

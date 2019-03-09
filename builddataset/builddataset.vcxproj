@@ -85,13 +85,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProgramW6432)\MobileRobots\Aria\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Program Files\MobileRobots\Aria\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProgramW6432)\MobileRobots\Aria\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>D:\Program Files\MobileRobots\Aria\lib64</AdditionalLibraryDirectories>
       <AdditionalDependencies>AriaDebugVC14.lib;ws2_32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -102,13 +102,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProgramW6432)\MobileRobots\Aria\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Program Files\MobileRobots\Aria\include</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProgramW6432)\MobileRobots\Aria\lib64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>D:\Program Files\MobileRobots\Aria\lib64</AdditionalLibraryDirectories>
       <AdditionalDependencies>AriaDebugVC14.lib;ws2_32.lib;winmm.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -156,6 +156,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="builddataset.cpp" />
+    <ClCompile Include="ThisRobot.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="basic.h" />
+    <ClInclude Include="CImg.h" />
+    <ClInclude Include="ThisRobot.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
