@@ -21,11 +21,13 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
+#include "showmap.h"
+
 
 // This defines the number of grid squares per meter. 
 // All sensors are assumed to be measuring in meters, whereas all code uses a basic unit of grid squares. 
 // We use this constant for conversion.
-#define MAP_SCALE 45
+#define MAP_SCALE 35
 
 // Some useful macros
 #define SIGN(A) ((A) >= 0.0 ? (1.0) : (-1.0))

@@ -156,12 +156,21 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="builddataset.cpp" />
+    <ClCompile Include="low.cpp" />
+    <ClCompile Include="map.cpp" />
+    <ClCompile Include="showmap.cpp" />
     <ClCompile Include="ThisRobot.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="basic.h" />
     <ClInclude Include="CImg.h" />
+    <ClInclude Include="low.h" />
+    <ClInclude Include="map.h" />
+    <ClInclude Include="showmap.h" />
     <ClInclude Include="ThisRobot.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

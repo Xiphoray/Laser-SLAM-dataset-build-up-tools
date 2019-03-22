@@ -30,8 +30,8 @@
 
 #include "ThisRobot.h"
 
-TOdo odometry;
 
+TOdo odometry;
 
 int InitializeThisRobot(int argc, char *argv[]) {
 
@@ -65,8 +65,9 @@ void GetSensation(TOdo &odometry, TSense &sense, ArRobot **robot) {
 			continue;
 		++numLasers;
 		laser->lockDevice();
-		odometry.x = laser->getSensorPositionX() * MAP_SCALE / 1000.0;
-		odometry.y = laser->getSensorPositionY() * MAP_SCALE / 1000.0;
+		odometry.b = laser->getSensorPositionX() * MAP_SCALE / 3000.0;
+		//odometry.x = laser->getSensorPositionX() * MAP_SCALE / 1000.0;
+		//odometry.y = laser->getSensorPositionY() * MAP_SCALE / 1000.0;
 		// The current readings are a set of obstacle readings (with X,Y positions as well as other attributes) that are the most recent set from teh laser.
 		std::list<ArPoseWithTime*> *currentReadings = laser->getCurrentBuffer(); // see ArRangeDevice interface doc
 		// The raw readings are just range or other data supplied by the sensor. It may also include some device-specific extra values associated with each reading as well. (e.g. Reflectance for LMS200)
@@ -75,32 +76,33 @@ void GetSensation(TOdo &odometry, TSense &sense, ArRobot **robot) {
 		for (std::list<ArPoseWithTime*>::const_iterator j = currentReadings->begin(); j != currentReadings->end(); ++j)
 		{
 			ArPoseWithTime* sen = *j;
-			double X = sen->findDistanceTo((**robot).getPose()) / 5000.0;
+			double X = sen->findDistanceTo((**robot).getPose()) / 3000.0;
 			sense[thsensor].distance = X*MAP_SCALE;
 			thsensor++;
 		}
 		laser->unlockDevice();
 	}
 	(**robot).unlock();
+	ArLog::log(ArLog::Normal, "laser data get");
 	return;
 }
 
 
 void GetOdometry(TOdo &odometry , ArRobot **robot) {
 	(**robot).lock();
-	odometry.theta = (**robot).getTh() / 180.0*M_PI;
-	//odometry.x = (**robot).getX() / 1000.0;
-	//odometry.y = (**robot).getY() / 1000.0;
-	
+	odometry.theta = (**robot).getTh()  / 180.0*M_PI - odometry.lastsumtheta;
+	odometry.lastsumtheta = (**robot).getTh() / 180.0*M_PI;
+	odometry.x = (**robot).getX()  *MAP_SCALE / 3000.0 - odometry.lastsumx;
+	odometry.lastsumx = (**robot).getX() *MAP_SCALE / 3000.0;
+	odometry.y = (**robot).getY()  *MAP_SCALE / 3000.0 - odometry.lastsumy;
+	odometry.lastsumy = (**robot).getY() *MAP_SCALE / 3000.0;
 	(**robot).unlock();
 	if (odometry.theta > M_PI)
 		odometry.theta = odometry.theta - 2.0 * M_PI;
 	else if (odometry.theta < -M_PI)
 		odometry.theta = odometry.theta + 2.0 * M_PI;
 
-
-	//odometry.x = odometry.x - (cos(odometry.theta)*TURN_RADIUS / MAP_SCALE);
-	//odometry.y = odometry.y - (sin(odometry.theta)*TURN_RADIUS / MAP_SCALE);
+	ArLog::log(ArLog::Normal, "odom data get");
 	return;
 }
 

@@ -24,11 +24,18 @@
 #include <math.h>
 // The number of sensor readings for this robot (typically 181 for a laser range finder)
 //TODO:传感器数量
-#define SENSE_NUMBER 450
+#define SENSE_NUMBER 540
 // Turn radius of the robot in map squares.Since the "robot" is actually the sensor origin for the
 // purposes of this program, the turn radius is the displacement of the sensor from the robot's center
 // of rotation (assuming holonomic turns)
 #define TURN_RADIUS (0.01 * MAP_SCALE)
+
+#define ClosetRange (0.17 * MAP_SCALE)
+
+#define FarestRange (3.4 * MAP_SCALE)
+
+
+extern const char *csv_addr;
 
 // Each sensor reading has direction it is looking (theta) and a distance at which it senses the object.
 // Direction of the sensor is relative to the facing of the robot, with "forward" being 0, and is
@@ -41,11 +48,12 @@ typedef TSenseSample TSense[SENSE_NUMBER + 1];
 
 // This is the structure for storing odometry data from the robot. The same conditions apply as above.
 struct odo_struct {
-	double x, y, theta;
+	double x, y, theta, lastsumtheta, lastsumx, lastsumy, b;
 };
 typedef struct odo_struct TOdo;
 
 extern TOdo odometry;
+extern TSense sense;
 
 // These should be self explainatory. Each one represents how the robot actually performs these tasks,
 // which the program issues the commands. Actual implementation in ThisRobot.c is specific to each robot.

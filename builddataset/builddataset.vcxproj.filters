@@ -17,6 +17,15 @@
     <ClCompile Include="ThisRobot.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="low.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="map.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="showmap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CImg.h">
@@ -28,5 +37,17 @@
     <ClInclude Include="basic.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="low.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="map.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="showmap.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
   </ItemGroup>
 </Project>

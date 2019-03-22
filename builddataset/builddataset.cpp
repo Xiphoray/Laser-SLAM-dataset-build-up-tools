@@ -3,18 +3,20 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include<fstream>
+#include<typeinfo>
+#include<windows.h>
 
 #include <math.h>
-
-#include <string.h>
+#include <string>
 #include <thread>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "CImg.h"
-
+#include "low.h"
 using namespace cimg_library;
-
+using namespace std;
 
 
 //
@@ -26,10 +28,19 @@ using namespace cimg_library;
 // Not used when the robot is reading data from a log file.
 double RotationSpeed, TranslationSpeed;
 
-// The means by which the slam thread can be told to halt, either by user command or by the end of a playback file.
-int continueSlam;
+bool CarActionFlag = true;
+bool IsCarAction = false;
 
-
+// 新一轮收集
+bool isnewround = false;
+// 数据集序列
+int DataNumber = 0;
+// 修改结果全地图地图即时显示
+CImg<unsigned char> Allmapimgwait;
+//激光数据图
+CImg<unsigned char> Laserimg;
+unsigned char black[] = { 0 };
+unsigned char white[] = { 255 };
 //
 //
 // InitializeRobot
@@ -84,6 +95,16 @@ int InitializeRobot(ArArgumentParser *parser, ArRobot *robot, ArRobotConnector *
 }
 
 
+static string  getCurrentTimeStr()
+{
+	time_t t = time(NULL);
+	char ch[64] = { 0 };
+	strftime(ch, sizeof(ch) - 1, "%Y%m%d%H%M%S", localtime(&t));     //年-月-日 时-分-秒
+	return ch;
+}
+
+
+
 //
 //
 // SlamThread
@@ -111,39 +132,117 @@ public:
 	 */
 	void* runThread(void*)
 	{
-
-		/*TPath *path, *trashPath;
-		TSenseLog *obs, *trashObs;*/
-
+		
 		myMutex.lock();
-		//InitHighSlam();
-		//InitLowSlam(robot);
+		char sysCall[128];
 		myMutex.unlock();
+		InitLowSlam(robot);
 		ArLog::log(ArLog::Normal, "InitLowSlam finished");
-
+		int rx, ry, xtest, ytest, X, Y, rX, rY;
+		double cosrad , sinrad ;
+		CImg<unsigned char> allmaprotation;
+		CImg<unsigned char> allmaptranslation;
 		// Run until the thread is requested to end by another thread.
 		while (this->getRunningWithLock())
 		{
 			myMutex.lock();
 
-			//ArLog::log(ArLog::Normal, "begin lowslam");
-			//LowSlam(continueSlam, &path, &obs, robot);
-			////HighSlam(path, obs);
+			if (CarActionFlag) {
+				(*robot).stop();
+				CarActionFlag = false;
+				LowSlam(robot);
+				allmaprotation.assign(Allmapimgwait);
+				cosrad = (double)std::cos(-odometry.theta);
+				sinrad = (double)std::sin(-odometry.theta);
+				
+				cimg_forXY(allmaprotation, x, y) {//+ odometry.b * (double)std::cos(-odometry.lastsumtheta)- odometry.b * (double)std::sin(-odometry.lastsumtheta)
+					const double
+						cX = x - ALLMAP_WIDTH/2 , cY = y - ALLMAP_HEIGHT/2 ,
+						fX = ALLMAP_WIDTH / 2 + cX * cosrad - cY * sinrad,
+						fY = ALLMAP_HEIGHT / 2 + cX * sinrad + cY * cosrad;
+					X = cimg::mod((int)fX, allmaprotation.width());
+					Y = cimg::mod((int)fY, allmaprotation.height());
+					ytest = (int)(odometry.x * (double)std::cos(odometry.lastsumtheta) + odometry.y * (double)std::sin(odometry.lastsumtheta));
+					xtest = (int)(-odometry.x * (double)std::sin(odometry.lastsumtheta) + odometry.y * (double)std::cos(odometry.lastsumtheta));
+					if ((y + ytest >= 0) && (y + ytest < allmaprotation.height()))
+						ry = y + ytest;
+					else
+						ry = y;
 
-			//// Get rid of the path and log of observations
-			//while (path != NULL) {
-			//	trashPath = path;
-			//	path = path->next;
-			//	free(trashPath);
-			//}
-			//while (obs != NULL) {
-			//	trashObs = obs;
-			//	obs = obs->next;
-			//	free(trashObs);
-			//}
+					if ((x + xtest < allmaprotation.width()) && (x + xtest >= 0))
+						rx = x + xtest;
+					else
+						rx = x;
+					cimg_forC(allmaprotation, c) Allmapimgwait(rx, ry, c) = allmaprotation(X, Y, c);
+				}
+				Laserimg.fill(255);
+				cimg_forXY(Laserimg, x, y) {
+					if (rawmap[x][y] == 0) {
+						Laserimg(x, y, 0) = 0;
+						Allmapimgwait((int)((ALLMAP_WIDTH - MAP_WIDTH) / 2) + x, (int)((ALLMAP_HEIGHT - MAP_HEIGHT) / 2) + y, 0) = 0;
+					}
+					
+				}
+			}
+			else {
+				CarActionFlag = true;
+				string input;
+				int h, w, h1, w1;
+				while (1) {
+					cin >> input;
+					if (input == "q") {
+						break;
+					}
+					else if (input == "l") {
 
+						cin >> input;
+						w = atoi(input.c_str());
+						cin >> input;
+						h = atoi(input.c_str());
+						cin >> input;
+						w1 = atoi(input.c_str());
+						cin >> input;
+						h1 = atoi(input.c_str());
+						Allmapimgwait.draw_line(w, h, w1, h1, black);
+					}
+					else {
+						w = atoi(input.c_str());
+						cin >> input;
+						h = atoi(input.c_str());
+						if (Allmapimgwait(w, h, 0) == 255)
+							Allmapimgwait(w, h, 0) = 0;
+						else
+							Allmapimgwait(w, h, 0) = 255;
+
+					}
+					ArLog::log(ArLog::Normal, "---");
+				}
+
+				sprintf(sysCall, "result/Allmap-%s.bmp", getCurrentTimeStr().c_str());
+				Allmapimgwait.save(sysCall);
+				int i;
+				ofstream fout(csv_addr, ios::app);
+				fout << DataNumber;
+				fout << SWPARATOR_BIG;
+				for (i = 0; i < SENSE_NUMBER; i++) {
+					fout << sense[i].distance;
+					fout << SWPARATOR_BIG;
+				}
+				fout << odometry.x << SWPARATOR_BIG;
+				fout << odometry.y << SWPARATOR_BIG;
+				fout << odometry.theta << SWPARATOR_BIG;
+				fout << odometry.lastsumtheta << SWPARATOR_BIG;
+				fout << sysCall << endl;
+				fout.close();
+				ArLog::log(ArLog::Normal, "%d turn is finished", DataNumber);
+
+				DataNumber++;
+				
+				(*robot).clearDirectMotion();
+				ArUtil::sleep(3000);
+			}
 			myMutex.unlock();
-			ArUtil::sleep(500);
+			
 		}
 		ArLog::log(ArLog::Normal, "Slam thread: requested stop running, ending thread.");
 		return NULL;
@@ -168,11 +267,115 @@ public:
 };
 
 
+
+//
+//
+// AllmapimgDisplayThread
+//
+// 地图修改显示线程
+//
+//
+class AllmapimgDisplayThread : public ArASyncTask
+{
+	ArCondition AllmapDisplayCondition;
+	ArMutex myMutex;
+
+public:
+	/* Construtor. Initialize counter. */
+	AllmapimgDisplayThread()
+	{
+		AllmapDisplayCondition.setLogName("AllmapimgDisplayThreadCondition");
+	}
+	void* runThread(void*)
+	{
+
+		int argc = 0;
+		char **argv = NULL;
+		CImgDisplay Allmap_disp;
+		// Run until the thread is requested to end by another thread.
+		while (this->getRunningWithLock())
+		{
+			Allmapimgwait.display(Allmap_disp, true);
+
+		}
+		ArLog::log(ArLog::Normal, "AllmapimgDisplay thread: requested stop running, ending thread.");
+		return NULL;
+	}
+	/* Other threads can call this to wait for a condition eventually
+	 * signalled by this thread. (So note that in this example program, this
+	 * function is not executed within "Example thread", but is executed in the main thread.)
+	 */
+	void waitOnCondition()
+	{
+		AllmapDisplayCondition.wait();
+		ArLog::log(ArLog::Normal, " %s ArCondition object was signalled, done waiting for it.", AllmapDisplayCondition.getLogName());
+	}
+
+	/* Lock the mutex object.  */
+	void lockMutex() { myMutex.lock(); }
+	/* Unlock the mutex object. */
+	void unlockMutex() { myMutex.unlock(); }
+};
+
+
+
+//
+//
+// LaserDisplayThread
+//
+// 激光数据图显示线程
+//
+//
+class LaserDisplayThread : public ArASyncTask
+{
+	ArCondition LaserDisplayCondition;
+	ArMutex myMutex;
+
+public:
+	/* Construtor. Initialize counter. */
+	LaserDisplayThread()
+	{
+		LaserDisplayCondition.setLogName("LaserDisplayThread");
+	}
+	void* runThread(void*)
+	{
+
+		int argc = 0;
+		char **argv = NULL;
+		CImgDisplay Laser_disp;
+		// Run until the thread is requested to end by another thread.
+		while (this->getRunningWithLock())
+		{
+			Laserimg.display(Laser_disp, true);
+
+		}
+		ArLog::log(ArLog::Normal, "LaserDisplay thread: requested stop running, ending thread.");
+		return NULL;
+	}
+	/* Other threads can call this to wait for a condition eventually
+	 * signalled by this thread. (So note that in this example program, this
+	 * function is not executed within "Example thread", but is executed in the main thread.)
+	 */
+	void waitOnCondition()
+	{
+		LaserDisplayCondition.wait();
+		ArLog::log(ArLog::Normal, " %s ArCondition object was signalled, done waiting for it.", LaserDisplayCondition.getLogName());
+	}
+
+	/* Lock the mutex object.  */
+	void lockMutex() { myMutex.lock(); }
+	/* Unlock the mutex object. */
+	void unlockMutex() { myMutex.unlock(); }
+};
+
+
+
+
 //
 //
 // ImgThread
 //
-// 图像显示线程
+// 地图图像显示线程
 //
 //
 bool imgflash = false;
@@ -198,27 +401,17 @@ public:
 
 		int argc = 0;
 		char **argv = NULL;
-
+		Showmap showmap;
 		// Run until the thread is requested to end by another thread.
 		while (this->getRunningWithLock())
 		{
-
-			const char* file_i = cimg_option("-i", "1.ppm", "Input image");
-			const double sigma = cimg_option("-blur", 1.0, "Variance of gaussian pre-blurring");
-			const CImg<unsigned char> image = CImg<>(file_i).normalize(0, 255);
-			CImgDisplay disp(image, "Color image (Try to move mouse pointer over)", 0);
-			while (1) {
-
-				cimg::wait(200);
-				if (imgflash) {
-					imgflash = false;
-					break;
-				}
-
+			if (imgflash) {
+				showmap.Todisplay();
+				imgflash = false;
+				fprintf(stderr, "Map dumped to file\n");
 			}
-
-			fprintf(stderr, "Map dumped to file\n");
-
+			
+			cimg::wait(2000);
 
 		}
 		ArLog::log(ArLog::Normal, "Img thread: requested stop running, ending thread.");
@@ -248,15 +441,28 @@ public:
 //
 int main(int argc, char **argv)
 {
+	char sysCall[128];
+	DataNumber = 0;
+	Allmapimgwait.assign(ALLMAP_HEIGHT, ALLMAP_WIDTH, 1, 1);
+	cimg_forXY(Allmapimgwait, x, y) {
+		Allmapimgwait(x, y, 0) = 255;	
+	}
+	Laserimg.assign(MAP_HEIGHT, MAP_WIDTH, 1, 1);
+
 
 	Aria::init();
 	ArRobot robot;
+
 	SlamThread slamThread;
-	ImgThread imgThread;
+	//ImgThread imgThread;
+	LaserDisplayThread laserdisplaythread;
+	AllmapimgDisplayThread allmapimgdisplaythread;
+
 	ArArgumentParser parser(&argc, argv);
 	parser.loadDefaultArguments();
 	ArRobotConnector robotConnector(&parser, &robot);
 	ArLaserConnector laserConnector(&parser, &robot, &robotConnector);
+
 
 
 	fprintf(stderr, "********** Localization Example *************\n");
@@ -267,27 +473,11 @@ int main(int argc, char **argv)
 
 	fprintf(stderr, "********** World Initialization ***********\n");
 
-	// Spawn off a seperate thread to do SLAM
-	//
-	// Should use semaphores or similar to prevent reading of the map
-	// during updates to the map.
-	//
-	continueSlam = 1;
+
 	if (robot.isConnected())
 	{
 		slamThread.setRobot(&robot);
 	}
-	//if (!robotConnector.connectRobot())
-	//{
-	//	ArLog::log(ArLog::Terse, "Could not connect to the robot.");
-	//	if (parser.checkHelpAndWarnUnparsed())
-	//	{
-	//		// -help not given, just exit.
-	//		Aria::logOptions();
-	//		Aria::exit(1);
-	//		return 1;
-	//	}
-	//}
 
 	// Trigger argument parsing
 	if (!Aria::parseArgs() || !parser.checkHelpAndWarnUnparsed())
@@ -297,29 +487,31 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-
-
 	robot.runAsync(true);
-
+	IsCarAction = true;
 	// turn on the motors, turn off amigobot sounds
 	robot.enableMotors();
-	robot.comInt(ArCommands::SOUNDTOG, 0);
+
+	//robot.comInt(ArCommands::SOUNDTOG, 0);
 	// add a set of actions that combine together to effect the wander behavior
 	ArActionStallRecover recover;
 	ArActionBumpers bumpers;
 	ArActionAvoidFront avoidFrontNear("Avoid Front Near", 112, 0);
 	ArActionAvoidFront avoidFrontFar;
-	ArActionConstantVelocity constantVelocity("Constant Velocity", 200);
-	robot.addAction(&recover, 50);
+	ArActionConstantVelocity constantVelocity("Constant Velocity", 500);
+	robot.addAction(&recover, 40);\
 	robot.addAction(&bumpers, 37);
 	robot.addAction(&avoidFrontNear, 25);
 	robot.addAction(&avoidFrontFar, 25);
 	robot.addAction(&constantVelocity, 12);
 
-
-
+	
+	
 	slamThread.runAsync();
-	imgThread.runAsync();
+	laserdisplaythread.runAsync();
+	allmapimgdisplaythread.runAsync();
+
+	//imgThread.runAsync();
 	// wait for robot task loop to end before exiting the program
 	robot.waitForRunExit();
 
